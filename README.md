@@ -1,3 +1,10 @@
+# This fork makes UVR5 work with AMD GPUs on ROCM 7.2
+
+With minor adaptations it'll also work for other ROCM versions and co. Further fixes have been done which were in the original upstream project.
+Largely AI-assisted fork changes.
+
+---
+
 # Ultimate Vocal Remover GUI v5.6
 <img src="https://raw.githubusercontent.com/Anjok07/ultimatevocalremovergui/master/gui_data/img/UVR_v5.6.png?raw=true" />
 
