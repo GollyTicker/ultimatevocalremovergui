@@ -42,9 +42,13 @@ if TYPE_CHECKING:
 mps_available = torch.backends.mps.is_available() if is_macos else False
 cuda_available = torch.cuda.is_available()
 
+# AMD ROCm detection
+# ROCm PyTorch uses torch.cuda API, but we can check for HIP/ROCm
+rocm_available = cuda_available and hasattr(torch.version, 'hip') and torch.version.hip is not None
+
 # def get_gpu_info():
 #     directml_device, directml_available = DIRECTML_DEVICE, False
-    
+
 #     if not is_macos:
 #         directml_available = torch_directml.is_available()
 
@@ -180,6 +184,11 @@ class SeperateAttributes:
         if self.is_gpu_conversion >= 0:
             if mps_available:
                 self.device, self.is_other_gpu = 'mps', True
+            elif rocm_available:
+                # AMD ROCm GPU - uses same CUDA API as NVIDIA
+                self.device = CUDA_DEVICE if self.device_set == DEFAULT else f'{CUDA_DEVICE}:{self.device_set}'
+                self.run_type = ['CUDAExecutionProvider']
+                self.is_other_gpu = True
             else:
                 device_prefix = None
                 if self.device_set != DEFAULT:
@@ -188,7 +197,7 @@ class SeperateAttributes:
                 # if directml_available and self.is_use_opencl:
                 #     self.device = torch_directml.device() if not device_prefix else f'{device_prefix}:{self.device_set}'
                 #     self.is_other_gpu = True
-                if cuda_available:# and not self.is_use_opencl:
+                if cuda_available and not rocm_available:# and not self.is_use_opencl:
                     self.device = CUDA_DEVICE if not device_prefix else f'{device_prefix}:{self.device_set}'
                     self.run_type = ['CUDAExecutionProvider']
 

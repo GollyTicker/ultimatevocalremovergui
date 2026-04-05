@@ -47,9 +47,9 @@ from pathlib  import Path
 from separate import (
     SeperateDemucs, SeperateMDX, SeperateMDXC, SeperateVR,  # Model-related
     save_format, clear_gpu_cache,  # Utility functions
-    cuda_available, mps_available, #directml_available,
+    cuda_available, mps_available, rocm_available, #directml_available,
 )
-from playsound import playsound
+from playsound3 import playsound
 from typing import List
 import onnx
 import re
@@ -66,6 +66,8 @@ from collections import Counter
 # is_cuda_only = cuda_available and not directml_available
 
 is_gpu_available = cuda_available or mps_available# or directml_available
+# AMD ROCm GPUs are detected via cuda_available (since ROCm uses CUDA API)
+# rocm_available provides additional detection info
 
 # Change the current working directory to the directory
 # this file sits in
@@ -2257,22 +2259,27 @@ class MainWindow(TkinterDnD.Tk if is_dnd_compatible else tk.Tk):
         if confirm:
             self.save_values(app_close=True, is_restart=True)
         
-    def delete_temps(self, is_start_up=False):  
+    def delete_temps(self, is_start_up=False):
         """Deletes temp files"""
-        
+
+        # Don't delete these critical project files
+        PROTECTED_FILES = ('requirements.txt', 'README.md', 'LICENSE', 'demucs_models.txt')
+
         DIRECTORIES = (BASE_PATH, VR_MODELS_DIR, MDX_MODELS_DIR, DEMUCS_MODELS_DIR, DEMUCS_NEWER_REPO_DIR)
-        EXTENSIONS = (('.aes', '.txt', '.tmp'))
-        
+        EXTENSIONS = (('.aes', '.tmp'))
+
         try:
             if os.path.isfile(f"{current_patch}{application_extension}"):
                 os.remove(f"{current_patch}{application_extension}")
-            
+
             if not is_start_up:
                 if os.path.isfile(SPLASH_DOC):
                     os.remove(SPLASH_DOC)
-            
+
             for dir in DIRECTORIES:
                 for temp_file in os.listdir(dir):
+                    if temp_file in PROTECTED_FILES:
+                        continue
                     if temp_file.endswith(EXTENSIONS):
                         if os.path.isfile(os.path.join(dir, temp_file)):
                             os.remove(os.path.join(dir, temp_file))
